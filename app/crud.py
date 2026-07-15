@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-import models, schemas
-from security import get_password_hash
+from . import models, schemas, security
+from sqlalchemy import select
 
-def create_user(db: Session, user: schemas.UserCreate):
-    hashed_password = get_password_hash(user.password)
+async def create_user(db: Session, user: schemas.UserCreate):
+    hashed_password = security.get_password_hash(user.password)
     new_user = models.User(
         first_name = user.first_name,
         last_name = user.last_name,
@@ -12,6 +12,10 @@ def create_user(db: Session, user: schemas.UserCreate):
     )
     
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     return new_user
+
+async def get_user_by_email(db: Session, email: str):
+    result = await db.execute(select(models.User).filter(models.User.email == email))
+    return result.scalar_one_or_none()
