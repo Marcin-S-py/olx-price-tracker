@@ -19,3 +19,18 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
 async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(models.User).filter(models.User.email == email))
     return result.scalar_one_or_none()
+
+async def get_users_offers(db: AsyncSession, user_id: int):
+    result = await db.execute(select(models.Offer).where(models.Offer.user_id == user_id))
+    return result.scalars().all()
+
+async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_id: int):
+    new_offer = models.Offer(
+        url = offer.url,
+        user_id = user_id,
+    )
+
+    db.add(new_offer)
+    await db.commit()
+    await db.refresh(new_offer)
+    return new_offer
