@@ -26,13 +26,16 @@ async def get_users_offers(db: AsyncSession, user_id: int):
     result = await db.execute(select(models.Offer).where(models.Offer.user_id == user_id).options(selectinload(models.Offer.prices)))
     return result.scalars().all()
 
-async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_id: int):
+async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_id: int, title: str = None, current_price: float = None):
     new_offer = models.Offer(
         url = offer.url,
         user_id = user_id,
+        title = title,
+        current_price = current_price
     )
 
     db.add(new_offer)
+    # await db.flush()
     await db.commit()
     await db.refresh(new_offer)
 

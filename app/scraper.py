@@ -1,41 +1,36 @@
-import requests
+import httpx
 from bs4 import BeautifulSoup
 import re
 
-def scrape_olx_item(url: str):
-    headers ={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
 
-    response = requests.get(url, headers=headers)
+async def scrape_olx_offer(url: str) -> dict | None:
+    async with httpx.AsyncClient(headers=HEADERS, timeout=10.0) as client:
+        try:
+            response = await client.get(url, follow_redirects=True)
+            if response.status_code != 200:
+                return None
+        except httpx.RequestError:
+            return None
+        
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    if response.status_code != 200:
-        print(f"Error while trying to download site! Status: {response.status_code}")
-        return None
-    
-    soup = BeautifulSoup(response.text, "html.parser")
+        title_tag = soup.find(attrs={"data-cy": "offer_title"})
+        title = title_tag.get_text(strip=True) if title_tag else None
 
-    title_element = soup.find(attrs={"data-cy": "offer_title"})
-    title = title_element.get_text(strip=True) if title_element else "Unknown Title"
+        price_tag = soup.find(attrs={"data-testid": "ad-price-container"})
+        price = None
 
-    price_container = soup.find(attrs={"data-testid": "ad-price-container"})
-    
-    price_val = None
-    if price_container:
-        price_element = price_container.find("h3")
-        if price_element:
-            raw_price = price_element.get_text(strip=True)
-            clean_price_str = re.sub(r"[^\d]", "", raw_price)
-            if clean_price_str:
-                price_val = int(clean_price_str)
-
-    print(f"Scraped Data:\n- Title: {title}\n- Price: {price_val} PLN")
-
-    return {
-        "title": title,
-        "price": price_val
-    }
-
-if __name__ == "__main__":
-    test_url = "https://www.olx.pl/d/oferta/jaguar-xf-sportbreak-241-km-4x4-stan-idealny-faktura-vat-marza-nowy-silnik-z-aso-polski-salon-okazja-CID5-ID1bldJO.html?search_reason=search%7Cpromoted"
-    scrape_olx_item(test_url)
+        if price_tag:
+            price_text = price_tag.get_text(strip=True)
+            if "darmo" in price_text.lower() or "zamien" in price_text.lower():
+                price = 0.0
+            else:
+                cleaned_price = re.sub(r"[^\d.,]", "", price_text).replace(",", ".")
+                try:
+                    price = float(cleaned_price)
+                except ValueError:
+                    price = None
+        return {"title": title, "price": price}
