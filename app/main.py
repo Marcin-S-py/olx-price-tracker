@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from app import schemas, crud, database, deps, models
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.routers import auth
+from app.routers import auth, offers
 
 app = FastAPI()
 
 app.include_router(auth.router)
+app.include_router(offers.router)
 
 @app.post("/users/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(database.get_db)):

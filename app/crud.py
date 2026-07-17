@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import models, schemas, security
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import set_committed_value
 
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
     hashed_password = security.get_password_hash(user.password)
@@ -21,7 +23,7 @@ async def get_user_by_email(db: AsyncSession, email: str):
     return result.scalar_one_or_none()
 
 async def get_users_offers(db: AsyncSession, user_id: int):
-    result = await db.execute(select(models.Offer).where(models.Offer.user_id == user_id))
+    result = await db.execute(select(models.Offer).where(models.Offer.user_id == user_id).options(selectinload(models.Offer.prices)))
     return result.scalars().all()
 
 async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_id: int):
@@ -33,4 +35,7 @@ async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_i
     db.add(new_offer)
     await db.commit()
     await db.refresh(new_offer)
+
+    set_committed_value(new_offer, 'prices', [])
+    
     return new_offer
