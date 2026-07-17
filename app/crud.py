@@ -35,10 +35,21 @@ async def create_user_offer(db: AsyncSession, offer: schemas.OfferCreate, user_i
     )
 
     db.add(new_offer)
-    # await db.flush()
+    await db.flush()
+
+    historical_prices = []
+    if current_price is not None:
+        new_price = models.PriceHistory(
+            offer_id = new_offer.id,
+            price = current_price
+        )
+
+        db.add(new_price)
+        historical_prices.append(new_price)
+
     await db.commit()
     await db.refresh(new_offer)
 
-    set_committed_value(new_offer, 'prices', [])
+    set_committed_value(new_offer, 'prices', historical_prices)
     
     return new_offer

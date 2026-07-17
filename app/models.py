@@ -32,6 +32,6 @@ class PriceHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     offer_id = Column(Integer, ForeignKey("offers.id", ondelete="CASCADE"), nullable=False)
     price = Column(Float, nullable=True)
-    checked_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    checked_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
 
     offer = relationship("Offer", back_populates="prices")
