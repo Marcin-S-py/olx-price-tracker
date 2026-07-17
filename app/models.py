@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.database import Base
@@ -31,3 +31,16 @@ class User(Base):
     last_name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String, nullable=False)
+
+    offers = relationship("Offer", back_populates="owner")
+
+class Offer(Base):
+    __tablename__ = "offers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String, nullable=False)
+    title = Column(String, nullable=True)
+    current_price = Column(Float, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    owner = relationship("User", back_populates="offers")

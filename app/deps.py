@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import jwt, JWTError
 from app.database import get_db
-from app import crud, security
+from app import crud
 from app.core.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
